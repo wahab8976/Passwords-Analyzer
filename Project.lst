@@ -1,4 +1,4 @@
-Microsoft (R) Macro Assembler Version 14.41.34123.0	    12/11/24 21:58:03
+Microsoft (R) Macro Assembler Version 14.41.34123.0	    12/12/24 23:32:55
 AddTwo.asm						     Page 1 - 1
 
 
@@ -35,22 +35,29 @@ AddTwo.asm						     Page 1 - 1
  00000008 00000000			captCount dd 0
  0000000C 00000000			charCount dd 0
 
+				    
 
+ 00000010 00000000		    generatedSmallAlphabetCount dd ?
+ 00000014 00000000		    generatedCaptAlphabetCount dd ?
+ 00000018 00000000		    generatedNumCount dd ?
+ 0000001C 00000000		    generatedCharCount dd ?
 
- 00000010  000001F4 [			inputPasswordStr byte max_Input_Size dup(?)
+ 00000020  000001F4 [			inputPasswordStr byte max_Input_Size dup(?)
 	    00
 	   ]
- 00000204  000001F4 [		    userChoice byte max_Input_Size dup(?)
+ 00000214  000001F4 [		    userChoice byte max_Input_Size dup(?)
 	    00
 	   ]
-
+ 00000408  000001F4 [		    generatedPass byte max_Input_Size dup(?)
+	    00
+	   ]
  00000000			.code
 
 
  00000000			main proc
 					mwrite"Enter your password to track the strength: "
- 000003F8		     1		.data		
- 000003F8 45 6E 74 65 72     1		??0000 BYTE "Enter your password to track the strength: ",0	
+ 000005FC		     1		.data		
+ 000005FC 45 6E 74 65 72     1		??0000 BYTE "Enter your password to track the strength: ",0	
 	   20 79 6F 75 72
 	   20 70 61 73 73
 	   77 6F 72 64 20
@@ -61,19 +68,18 @@ AddTwo.asm						     Page 1 - 1
 	   68 3A 20 00
  00000000		     1		.code
  00000000  52		     1		push	edx
- 00000001  BA 000003F8 R     1		mov	edx,OFFSET ??0000
+ 00000001  BA 000005FC R     1		mov	edx,OFFSET ??0000
  00000006  E8 00000000 E     1		call	WriteString
  0000000B  5A		     1		pop	edx
 
 					;Reads String from the user
- 0000000C  BA 00000010 R		mov edx,offset inputPasswordStr
+ 0000000C  BA 00000020 R		mov edx,offset inputPasswordStr
  00000011  B9 000001F4			mov ecx,max_Input_Size
  00000016  E8 00000000 E		call readstring 
 
 					;Calling count function to get values of Combinations
- 0000001B  68 00000010 R		push offset inputPasswordStr
- 00000020  E8 00000035			call count
-
+ 0000001B  68 00000020 R		push offset inputPasswordStr
+ 00000020  E8 00000049			call count
 
 
  00000025  FF 35 00000004 R	    push smallCount
@@ -81,131 +87,128 @@ AddTwo.asm						     Page 1 - 1
  00000031  FF 35 00000008 R		push captCount
  00000037  FF 35 0000000C R		push charCount
 
- 0000003D  E8 0000008F		    call evaluate
+ 0000003D  E8 0000009D		    call evaluate
 
  00000042  E8 00000000 E	    call crlf
-				    mwrite"Here is a strong Password suggested by us"
- 00000424		     1		.data		
- 00000424 48 65 72 65 20     1		??0001 BYTE "Here is a strong Password suggested by us",0	
-	   69 73 20 61 20
-	   73 74 72 6F 6E
-	   67 20 50 61 73
-	   73 77 6F 72 64
-	   20 73 75 67 67
-	   65 73 74 65 64
-	   20 62 79 20 75
-	   73 00
+				    mwrite"Here  Strong Suggested Password for you to Use"
+ 00000628		     1		.data		
+ 00000628 48 65 72 65 20     1		??0001 BYTE "Here  Strong Suggested Password for you to Use",0	
+	   20 53 74 72 6F
+	   6E 67 20 53 75
+	   67 67 65 73 74
+	   65 64 20 50 61
+	   73 73 77 6F 72
+	   64 20 66 6F 72
+	   20 79 6F 75 20
+	   74 6F 20 55 73
+	   65 00
  00000047		     1		.code
  00000047  52		     1		push	edx
- 00000048  BA 00000424 R     1		mov	edx,OFFSET ??0001
+ 00000048  BA 00000628 R     1		mov	edx,OFFSET ??0001
  0000004D  E8 00000000 E     1		call	WriteString
  00000052  5A		     1		pop	edx
-
-				    
-
-
-
+ 00000053  BA 00000408 R	    mov edx, offset generatedPass
+ 00000058  B9 000001F4		    mov ecx, max_Input_Size
+ 0000005D  E8 00000117		    call suggest
+ 00000062  E8 00000000 E	    call writestring
 
 
 				exit
- 00000053  6A 00	   *	    push   +000000000h
- 00000055  E8 00000000 E   *	    call   ExitProcess
- 0000005A			main endp
+ 00000067  6A 00	   *	    push   +000000000h
+ 00000069  E8 00000000 E   *	    call   ExitProcess
+ 0000006E			main endp
 
 
- 0000005A			count proc
- 0000005A  55			    push ebp
- 0000005B  8B EC		    mov ebp, esp
+ 0000006E			count proc
+ 0000006E  55			    push ebp
+ 0000006F  8B EC		    mov ebp, esp
 
- 0000005D  8B 55 08		    mov edx, [ebp+8]    ; Load the address of the string into EDX
- 00000060  BE 00000000		    mov esi, 0          ; Initialize index to 0
+ 00000071  8B 55 08		    mov edx, [ebp+8]    ; Load the address of the string into EDX
+ 00000074  BE 00000000		    mov esi, 0          ; Initialize index to 0
 
 				    ; Initialize counters
- 00000065  C7 05 00000000 R	    mov numCount, 0      
+ 00000079  C7 05 00000000 R	    mov numCount, 0      
 	   00000000
- 0000006F  C7 05 00000008 R	    mov captCount, 0     
+ 00000083  C7 05 00000008 R	    mov captCount, 0     
 	   00000000
- 00000079  C7 05 00000004 R	    mov smallCount, 0    
+ 0000008D  C7 05 00000004 R	    mov smallCount, 0    
 	   00000000
- 00000083  C7 05 0000000C R	    mov charCount, 0     
+ 00000097  C7 05 0000000C R	    mov charCount, 0     
 	   00000000
 
 				    ; Loop through the string until null terminator (\0)
 				    ; Reads the whole string and counts the type of characters in the string
 				    
 				    .while byte ptr [edx + esi] != 0
- 0000008D  EB 3A	   *	    jmp    @C0001
- 0000008F		   *@C0002:
+ 000000A1  EB 34	   *	    jmp    @C0001
+ 000000A3		   *@C0002:
 
- 0000008F  8A 04 32		        mov al, byte ptr [edx + esi] ; Load the current character into AL
+ 000000A3  8A 04 32		        mov al, byte ptr [edx + esi] ; Load the current character into AL
 
 				            ; Check if it's an uppercase letter (A-Z)
 				            .if al >= 'A' && al <= 'Z'
- 00000092  3C 41	   *	    cmp    al, 'A'
- 00000094  72 0C	   *	    jb	@C0003
- 00000096  3C 5A	   *	    cmp    al, 'Z'
- 00000098  77 08	   *	    ja	@C0003
- 0000009A  FF 05 00000008 R	            inc captCount           
-
-				            ; Check if it's a lowercase letter (a-z)
-				            .elseif al >= 'a' && al <= 'z'
- 000000A0  EB 26	   *	    jmp    @C0006
- 000000A2		   *@C0003:
- 000000A2  3C 61	   *	    cmp    al, 'a'
- 000000A4  72 0C	   *	    jb	@C0007
- 000000A6  3C 7A	   *	    cmp    al, 'z'
- 000000A8  77 08	   *	    ja	@C0007
- 000000AA  FF 05 00000004 R	            inc smallCount         
-
-				            ; Check if it's a digit (0-9)
-				            .elseif al >= '0' && al <= '9'
- 000000B0  EB 16	   *	    jmp    @C000A
- 000000B2		   *@C0007:
- 000000B2  3C 30	   *	    cmp    al, '0'
- 000000B4  72 0C	   *	    jb	@C000B
- 000000B6  3C 39	   *	    cmp    al, '9'
- 000000B8  77 08	   *	    ja	@C000B
- 000000BA  FF 05 00000000 R	            inc numCount            
-
-				            ; Otherwise, it's a special character
-				            .else
- 000000C0  EB 06	   *	    jmp    @C000E
- 000000C2		   *@C000B:
- 000000C2  FF 05 0000000C R	            inc charCount           
+ 000000A6  3C 41	   *	    cmp    al, 'A'
+ 000000A8  72 0A	   *	    jb	@C0003
+ 000000AA  3C 5A	   *	    cmp    al, 'Z'
+ 000000AC  77 06	   *	    ja	@C0003
+ 000000AE  FF 05 00000008 R	            inc captCount           
 				            .endif
 
- 000000C8		   *@C000E:
- 000000C8		   *@C000A:
- 000000C8		   *@C0006:
- 000000C8  46			        inc esi    ;This register contains the track of while loop to itterate through the loop
+				            ; Check if it's a lowercase letter (a-z)
+				            .if al >= 'a' && al <= 'z'
+ 000000B4		   *@C0003:
+ 000000B4  3C 61	   *	    cmp    al, 'a'
+ 000000B6  72 0A	   *	    jb	@C0006
+ 000000B8  3C 7A	   *	    cmp    al, 'z'
+ 000000BA  77 06	   *	    ja	@C0006
+ 000000BC  FF 05 00000004 R	            inc smallCount         
+				            .endif
+
+				            ; Check if it's a digit (0-9)
+				            .if al >= '0' && al <= '9'
+ 000000C2		   *@C0006:
+ 000000C2  3C 30	   *	    cmp    al, '0'
+ 000000C4  72 0A	   *	    jb	@C0009
+ 000000C6  3C 39	   *	    cmp    al, '9'
+ 000000C8  77 06	   *	    ja	@C0009
+ 000000CA  FF 05 00000000 R	            inc numCount            
+				            .endif
+
+				            ; Otherwise, it's a special character
+				            .if
+ 000000D0		   *@C0009:
+ 000000D0  FF 05 0000000C R	            inc charCount           
+				            .endif
+
+ 000000D6  46			        inc esi    ;This register contains the track of while loop to itterate through the loop
 				    
 				    .endw
- 000000C9		   *@C0001:
- 000000C9  80 3C 32 00	   *	    cmp    byte ptr [edx + esi], 000h
- 000000CD  75 C0	   *	    jne    @C0002
+ 000000D7		   *@C0001:
+ 000000D7  80 3C 32 00	   *	    cmp    byte ptr [edx + esi], 000h
+ 000000DB  75 C6	   *	    jne    @C0002
 
- 000000CF  5D			    pop ebp
- 000000D0  C3			    ret
- 000000D1			count endp
+ 000000DD  5D			    pop ebp
+ 000000DE  C3			    ret
+ 000000DF			count endp
 
 
- 000000D1			evaluate proc
- 000000D1  55			    push ebp
- 000000D2  8B EC		    mov ebp, esp
+ 000000DF			evaluate proc
+ 000000DF  55			    push ebp
+ 000000E0  8B EC		    mov ebp, esp
 
 
 				    ; Access the arguments
- 000000D4  8B 45 08		    mov eax, [ebp+8]
- 000000D7  A3 0000000C R	    mov charCount, eax
+ 000000E2  8B 45 08		    mov eax, [ebp+8]
+ 000000E5  A3 0000000C R	    mov charCount, eax
 
- 000000DC  8B 45 0C		    mov eax, [ebp+12]
- 000000DF  A3 00000000 R	    mov numCount, eax
+ 000000EA  8B 45 0C		    mov eax, [ebp+12]
+ 000000ED  A3 00000000 R	    mov numCount, eax
 
- 000000E4  8B 45 10		    mov eax, [ebp+16]
- 000000E7  A3 00000004 R	    mov smallCount, eax
+ 000000F2  8B 45 10		    mov eax, [ebp+16]
+ 000000F5  A3 00000004 R	    mov smallCount, eax
 
- 000000EC  8B 45 14		    mov eax, [ebp+20]
- 000000EF  A3 00000008 R	    mov captCount, eax
+ 000000FA  8B 45 14		    mov eax, [ebp+20]
+ 000000FD  A3 00000008 R	    mov captCount, eax
 
 
 				    ;Password Criterias
@@ -213,90 +216,153 @@ AddTwo.asm						     Page 1 - 1
 				    ;Medium: Atleast 1, uppercase and lowercase, more than 2 Numbers and Characters
 				    ;Weak: Otherwise, password is weak
 
- 000000F4  E8 00000000 E	    call crlf
+ 00000102  E8 00000000 E	    call crlf
 
 				    .if captCount > 2 && smallCount > 2 && numCount > 3 && charCount > 3
- 000000F9  83 3D 00000008 R
+ 00000107  83 3D 00000008 R
 	   02		   *	    cmp    captCount, 002h
- 00000100  76 29	   *	    jbe    @C0010
- 00000102  83 3D 00000004 R
+ 0000010E  76 29	   *	    jbe    @C000F
+ 00000110  83 3D 00000004 R
 	   02		   *	    cmp    smallCount, 002h
- 00000109  76 20	   *	    jbe    @C0010
- 0000010B  83 3D 00000000 R
+ 00000117  76 20	   *	    jbe    @C000F
+ 00000119  83 3D 00000000 R
 	   03		   *	    cmp    numCount, 003h
- 00000112  76 17	   *	    jbe    @C0010
- 00000114  83 3D 0000000C R
+ 00000120  76 17	   *	    jbe    @C000F
+ 00000122  83 3D 0000000C R
 	   03		   *	    cmp    charCount, 003h
- 0000011B  76 0E	   *	    jbe    @C0010
+ 00000129  76 0E	   *	    jbe    @C000F
 				        mwrite "Password Strength: Strong"
- 0000044E		     1		.data		
- 0000044E 50 61 73 73 77     1		??0002 BYTE "Password Strength: Strong",0	
+ 00000657		     1		.data		
+ 00000657 50 61 73 73 77     1		??0002 BYTE "Password Strength: Strong",0	
 	   6F 72 64 20 53
 	   74 72 65 6E 67
 	   74 68 3A 20 53
 	   74 72 6F 6E 67
 	   00
- 0000011D		     1		.code
- 0000011D  52		     1		push	edx
- 0000011E  BA 0000044E R     1		mov	edx,OFFSET ??0002
- 00000123  E8 00000000 E     1		call	WriteString
- 00000128  5A		     1		pop	edx
+ 0000012B		     1		.code
+ 0000012B  52		     1		push	edx
+ 0000012C  BA 00000657 R     1		mov	edx,OFFSET ??0002
+ 00000131  E8 00000000 E     1		call	WriteString
+ 00000136  5A		     1		pop	edx
 				    .elseif captCount >= 1 && smallCount >= 1 && numCount >= 2 && charCount >= 2
- 00000129  EB 3E	   *	    jmp    @C0015
- 0000012B		   *@C0010:
- 0000012B  83 3D 00000008 R
+ 00000137  EB 3E	   *	    jmp    @C0014
+ 00000139		   *@C000F:
+ 00000139  83 3D 00000008 R
 	   01		   *	    cmp    captCount, 001h
- 00000132  72 29	   *	    jb	@C0016
- 00000134  83 3D 00000004 R
+ 00000140  72 29	   *	    jb	@C0015
+ 00000142  83 3D 00000004 R
 	   01		   *	    cmp    smallCount, 001h
- 0000013B  72 20	   *	    jb	@C0016
- 0000013D  83 3D 00000000 R
+ 00000149  72 20	   *	    jb	@C0015
+ 0000014B  83 3D 00000000 R
 	   02		   *	    cmp    numCount, 002h
- 00000144  72 17	   *	    jb	@C0016
- 00000146  83 3D 0000000C R
+ 00000152  72 17	   *	    jb	@C0015
+ 00000154  83 3D 0000000C R
 	   02		   *	    cmp    charCount, 002h
- 0000014D  72 0E	   *	    jb	@C0016
+ 0000015B  72 0E	   *	    jb	@C0015
 				        mwrite "Password Strength: Medium"
- 00000468		     1		.data		
- 00000468 50 61 73 73 77     1		??0003 BYTE "Password Strength: Medium",0	
+ 00000671		     1		.data		
+ 00000671 50 61 73 73 77     1		??0003 BYTE "Password Strength: Medium",0	
 	   6F 72 64 20 53
 	   74 72 65 6E 67
 	   74 68 3A 20 4D
 	   65 64 69 75 6D
 	   00
- 0000014F		     1		.code
- 0000014F  52		     1		push	edx
- 00000150  BA 00000468 R     1		mov	edx,OFFSET ??0003
- 00000155  E8 00000000 E     1		call	WriteString
- 0000015A  5A		     1		pop	edx
+ 0000015D		     1		.code
+ 0000015D  52		     1		push	edx
+ 0000015E  BA 00000671 R     1		mov	edx,OFFSET ??0003
+ 00000163  E8 00000000 E     1		call	WriteString
+ 00000168  5A		     1		pop	edx
 				    .else
- 0000015B  EB 0C	   *	    jmp    @C001B
- 0000015D		   *@C0016:
+ 00000169  EB 0C	   *	    jmp    @C001A
+ 0000016B		   *@C0015:
 				        mwrite "Password Strength: Weak"
- 00000482		     1		.data		
- 00000482 50 61 73 73 77     1		??0004 BYTE "Password Strength: Weak",0	
+ 0000068B		     1		.data		
+ 0000068B 50 61 73 73 77     1		??0004 BYTE "Password Strength: Weak",0	
 	   6F 72 64 20 53
 	   74 72 65 6E 67
 	   74 68 3A 20 57
 	   65 61 6B 00
- 0000015D		     1		.code
- 0000015D  52		     1		push	edx
- 0000015E  BA 00000482 R     1		mov	edx,OFFSET ??0004
- 00000163  E8 00000000 E     1		call	WriteString
- 00000168  5A		     1		pop	edx
+ 0000016B		     1		.code
+ 0000016B  52		     1		push	edx
+ 0000016C  BA 0000068B R     1		mov	edx,OFFSET ??0004
+ 00000171  E8 00000000 E     1		call	WriteString
+ 00000176  5A		     1		pop	edx
 				    .endif
- 00000169		   *@C001B:
- 00000169		   *@C0015:
+ 00000177		   *@C001A:
+ 00000177		   *@C0014:
 
 
- 00000169  5D			    pop ebp
- 0000016A  C3			    ret
+ 00000177  5D			    pop ebp
+ 00000178  C3			    ret
 
- 0000016B			evaluate endp
+ 00000179			evaluate endp
+
+
+ 00000179			suggest proc
+				    ; Initialize random number generator
+ 00000179  E8 00000000 E	    call Randomize
+
+				    ; Define password length
+ 0000017E  B9 00000010		    mov ecx, 16               ; Total password length
+ 00000183  8D 3A		    lea edi, [edx]            ; Pointer passed from the caller, where the password will be stored
+
+				    ; Ensure inclusion of one character from each category
+				    ; Uppercase (A–Z)
+ 00000185  E8 00000000 E	    call RandomRange
+ 0000018A  B8 0000001A		    mov eax, 26
+ 0000018F  E8 00000000 E	    call RandomRange
+ 00000194  04 41		    add al, 65                ; Shift to uppercase ASCII
+ 00000196  88 07		    mov [edi], al
+ 00000198  47			    inc edi
+
+				    ; Lowercase (a–z)
+ 00000199  E8 00000000 E	    call RandomRange
+ 0000019E  B8 0000001A		    mov eax, 26
+ 000001A3  E8 00000000 E	    call RandomRange
+ 000001A8  04 61		    add al, 97                ; Shift to lowercase ASCII
+ 000001AA  88 07		    mov [edi], al
+ 000001AC  47			    inc edi
+
+				    ; Digit (0–9)
+ 000001AD  E8 00000000 E	    call RandomRange
+ 000001B2  B8 0000000A		    mov eax, 10
+ 000001B7  E8 00000000 E	    call RandomRange
+ 000001BC  04 30		    add al, 48                ; Shift to digit ASCII
+ 000001BE  88 07		    mov [edi], al
+ 000001C0  47			    inc edi
+
+				    ; Special character (!–/)
+ 000001C1  E8 00000000 E	    call RandomRange
+ 000001C6  B8 0000000F		    mov eax, 15
+ 000001CB  E8 00000000 E	    call RandomRange
+ 000001D0  04 21		    add al, 33                ; Shift to special character ASCII
+ 000001D2  88 07		    mov [edi], al
+ 000001D4  47			    inc edi
+
+				    ; Fill remaining password length with random printable characters
+ 000001D5  83 E9 04		    sub ecx, 4                ; Remaining characters after mandatory inclusions
+ 000001D8			fill_remaining:
+ 000001D8  E8 00000000 E	    call RandomRange
+ 000001DD  B8 0000005E		    mov eax, 94               ; Range of printable ASCII characters
+ 000001E2  E8 00000000 E	    call RandomRange
+ 000001E7  04 21		    add al, 33                ; Shift to printable ASCII range (33-126)
+ 000001E9  88 07		    mov [edi], al
+ 000001EB  47			    inc edi
+ 000001EC  E2 EA		    loop fill_remaining
+
+				    ; Null-terminate the password
+ 000001EE  C6 07 00		    mov byte ptr [edi], 0
+
+ 000001F1  C3			    ret ; Return to the calling location (password has been written to the memory address passed in edx)
+ 000001F2			suggest endp
+
+
+
+
 
 				end main
 
-Microsoft (R) Macro Assembler Version 14.41.34123.0	    12/11/24 21:58:03
+Microsoft (R) Macro Assembler Version 14.41.34123.0	    12/12/24 23:32:55
 AddTwo.asm						     Symbols 2 - 1
 
 
@@ -408,8 +474,8 @@ Segments and Groups:
 
 FLAT . . . . . . . . . . . . . .	GROUP
 STACK  . . . . . . . . . . . . .	32 Bit	 00001000 Para	  Stack	  'STACK'	 
-_DATA  . . . . . . . . . . . . .	32 Bit	 0000049A Para	  Public  'DATA'	
-_TEXT  . . . . . . . . . . . . .	32 Bit	 0000016B Para	  Public  'CODE'	
+_DATA  . . . . . . . . . . . . .	32 Bit	 000006A3 Para	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 000001F2 Para	  Public  'CODE'	
 
 
 Procedures, parameters, and locals:
@@ -516,11 +582,13 @@ WriteStackFrame  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External
 WriteString  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteToFile  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteWindowsMsg  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
-count  . . . . . . . . . . . . .	P Near	 0000005A _TEXT	Length= 00000077 Public STDCALL
-evaluate . . . . . . . . . . . .	P Near	 000000D1 _TEXT	Length= 0000009A Public STDCALL
-main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 0000005A Public STDCALL
+count  . . . . . . . . . . . . .	P Near	 0000006E _TEXT	Length= 00000071 Public STDCALL
+evaluate . . . . . . . . . . . .	P Near	 000000DF _TEXT	Length= 0000009A Public STDCALL
+main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 0000006E Public STDCALL
 printf . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
 scanf  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
+suggest  . . . . . . . . . . . .	P Near	 00000179 _TEXT	Length= 00000079 Public STDCALL
+  fill_remaining . . . . . . . .	L Near	 000001D8 _TEXT	
 wsprintfA  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
 
 
@@ -528,11 +596,11 @@ Symbols:
 
                 N a m e                 Type     Value    Attr
 
-??0000 . . . . . . . . . . . . .	Byte	 000003F8 _DATA	
-??0001 . . . . . . . . . . . . .	Byte	 00000424 _DATA	
-??0002 . . . . . . . . . . . . .	Byte	 0000044E _DATA	
-??0003 . . . . . . . . . . . . .	Byte	 00000468 _DATA	
-??0004 . . . . . . . . . . . . .	Byte	 00000482 _DATA	
+??0000 . . . . . . . . . . . . .	Byte	 000005FC _DATA	
+??0001 . . . . . . . . . . . . .	Byte	 00000628 _DATA	
+??0002 . . . . . . . . . . . . .	Byte	 00000657 _DATA	
+??0003 . . . . . . . . . . . . .	Byte	 00000671 _DATA	
+??0004 . . . . . . . . . . . . .	Byte	 0000068B _DATA	
 @CodeSize  . . . . . . . . . . .	Number	 00000000h   
 @DataSize  . . . . . . . . . . .	Number	 00000000h   
 @Interface . . . . . . . . . . .	Number	 00000003h   
@@ -749,9 +817,14 @@ captCount  . . . . . . . . . . .	DWord	 00000008 _DATA
 charCount  . . . . . . . . . . .	DWord	 0000000C _DATA	
 cyan . . . . . . . . . . . . . .	Number	 00000003h   
 exit . . . . . . . . . . . . . .	Text   	 INVOKE ExitProcess,0
+generatedCaptAlphabetCount . . .	DWord	 00000014 _DATA	
+generatedCharCount . . . . . . .	DWord	 0000001C _DATA	
+generatedNumCount  . . . . . . .	DWord	 00000018 _DATA	
+generatedPass  . . . . . . . . .	Byte	 00000408 _DATA	
+generatedSmallAlphabetCount  . .	DWord	 00000010 _DATA	
 gray . . . . . . . . . . . . . .	Number	 00000008h   
 green  . . . . . . . . . . . . .	Number	 00000002h   
-inputPasswordStr . . . . . . . .	Byte	 00000010 _DATA	
+inputPasswordStr . . . . . . . .	Byte	 00000020 _DATA	
 lightBlue  . . . . . . . . . . .	Number	 00000009h   
 lightCyan  . . . . . . . . . . .	Number	 0000000Bh   
 lightGray  . . . . . . . . . . .	Number	 00000007h   
@@ -763,7 +836,7 @@ max_Input_Size . . . . . . . . .	Number	 000001F4h
 numCount . . . . . . . . . . . .	DWord	 00000000 _DATA	
 red  . . . . . . . . . . . . . .	Number	 00000004h   
 smallCount . . . . . . . . . . .	DWord	 00000004 _DATA	
-userChoice . . . . . . . . . . .	Byte	 00000204 _DATA	
+userChoice . . . . . . . . . . .	Byte	 00000214 _DATA	
 white  . . . . . . . . . . . . .	Number	 0000000Fh   
 wsprintf . . . . . . . . . . . .	Text   	 wsprintfA
 yellow . . . . . . . . . . . . .	Number	 0000000Eh   

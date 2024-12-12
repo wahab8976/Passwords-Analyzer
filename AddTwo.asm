@@ -11,11 +11,16 @@ max_Input_Size = 500
 	captCount dd 0
 	charCount dd 0
 
+    
 
+    generatedSmallAlphabetCount dd ?
+    generatedCaptAlphabetCount dd ?
+    generatedNumCount dd ?
+    generatedCharCount dd ?
 
 	inputPasswordStr byte max_Input_Size dup(?)
     userChoice byte max_Input_Size dup(?)
-
+    generatedPass byte max_Input_Size dup(?)
 .code
 
 
@@ -32,7 +37,6 @@ main proc
 	call count
 
 
-
     push smallCount
     push numCount 
 	push captCount
@@ -41,12 +45,11 @@ main proc
     call evaluate
 
     call crlf
-    mwrite"Here is a strong Password suggested by us"
-
-    
-
-
-
+    mwrite"Here  Strong Suggested Password for you to Use"
+    mov edx, offset generatedPass
+    mov ecx, max_Input_Size
+    call suggest
+    call writestring
 
 
 exit
@@ -76,17 +79,20 @@ count proc
             ; Check if it's an uppercase letter (A-Z)
             .if al >= 'A' && al <= 'Z'
             inc captCount           
+            .endif
 
             ; Check if it's a lowercase letter (a-z)
-            .elseif al >= 'a' && al <= 'z'
+            .if al >= 'a' && al <= 'z'
             inc smallCount         
+            .endif
 
             ; Check if it's a digit (0-9)
-            .elseif al >= '0' && al <= '9'
+            .if al >= '0' && al <= '9'
             inc numCount            
+            .endif
 
             ; Otherwise, it's a special character
-            .else
+            .if
             inc charCount           
             .endif
 
@@ -138,6 +144,69 @@ evaluate proc
     ret
 
 evaluate endp
+
+
+suggest proc
+    ; Initialize random number generator
+    call Randomize
+
+    ; Define password length
+    mov ecx, 16               ; Total password length
+    lea edi, [edx]            ; Pointer passed from the caller, where the password will be stored
+
+    ; Ensure inclusion of one character from each category
+    ; Uppercase (A–Z)
+    call RandomRange
+    mov eax, 26
+    call RandomRange
+    add al, 65                ; Shift to uppercase ASCII
+    mov [edi], al
+    inc edi
+
+    ; Lowercase (a–z)
+    call RandomRange
+    mov eax, 26
+    call RandomRange
+    add al, 97                ; Shift to lowercase ASCII
+    mov [edi], al
+    inc edi
+
+    ; Digit (0–9)
+    call RandomRange
+    mov eax, 10
+    call RandomRange
+    add al, 48                ; Shift to digit ASCII
+    mov [edi], al
+    inc edi
+
+    ; Special character (!–/)
+    call RandomRange
+    mov eax, 15
+    call RandomRange
+    add al, 33                ; Shift to special character ASCII
+    mov [edi], al
+    inc edi
+
+    ; Fill remaining password length with random printable characters
+    sub ecx, 4                ; Remaining characters after mandatory inclusions
+fill_remaining:
+    call RandomRange
+    mov eax, 94               ; Range of printable ASCII characters
+    call RandomRange
+    add al, 33                ; Shift to printable ASCII range (33-126)
+    mov [edi], al
+    inc edi
+    loop fill_remaining
+
+    ; Null-terminate the password
+    mov byte ptr [edi], 0
+
+    ret ; Return to the calling location (password has been written to the memory address passed in edx)
+suggest endp
+
+
+
+
 
 end main
 
