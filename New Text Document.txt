@@ -1,0 +1,24 @@
+include irvine32.inc
+include macros.inc
+
+.data
+     sampleArray dd 12, 34, 56, 78, 90, 23, 45, 67, 89, 10
+.code
+
+main proc
+
+    mov esi,offset sampleArray
+    mov ecx,LENGTHOF sampleArray
+    
+    mov ebx,0
+printArray:
+    mov eax,[esi+ebx]
+    call Writedec
+    add ebx,4
+    call crlf
+
+	loop printArray
+
+exit
+main endp
+end main
