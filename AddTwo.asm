@@ -10,8 +10,11 @@ max_Input_Size = 500
 	smallCount dd 0
 	captCount dd 0
 	charCount dd 0
+    userChoice dd 0
+    passLength dd 0
+    fileHandler HANDLE ?
 
-    
+
 
     generatedSmallAlphabetCount dd ?
     generatedCaptAlphabetCount dd ?
@@ -19,44 +22,93 @@ max_Input_Size = 500
     generatedCharCount dd ?
 
 	inputPasswordStr byte max_Input_Size dup(?)
-    userChoice byte max_Input_Size dup(?)
     generatedPass byte max_Input_Size dup(?)
+
+    logFileName byte "password_strength.txt",0
+
+    strength byte max_Input_Size dup(?)   
+    
+    loadedPasswords byte max_Input_Size dup(?)
+    
 .code
 
+main PROC
 
-main proc
-	mwrite"Enter your password to track the strength: "
-
-	;Reads String from the user
-	mov edx,offset inputPasswordStr
-	mov ecx,max_Input_Size
-	call readstring 
-
-	;Calling count function to get values of Combinations
-	push offset inputPasswordStr
-	call count
-
-
-    push smallCount
-    push numCount 
-	push captCount
-	push charCount
-
-    call evaluate
-
+    ; Display welcome message
+    mwrite "Welcome to Password Strength Checker"
     call crlf
-    mwrite"Here  Strong Suggested Password for you to Use"
-    mov edx, offset generatedPass
-    mov ecx, max_Input_Size
-    call suggest
-    call writestring
 
+    .repeat
+        ; Display menu
+        call crlf
+        mwrite "1. Check Password Strength"
+        call crlf
+        mwrite "2. Read Password's History from File"
+        call crlf
+        mwrite "3. Exit"
+        call crlf
+        mwrite "Enter your choice: "
+        call readint
+        mov userChoice, eax
+        
+        ; Handle user choice
+        .if userChoice == 1
+            ; Password strength checker
+            mwrite "Enter your password to track the strength: "
+            call crlf
+            
+            ; Read user input password
+            mov edx, offset inputPasswordStr ; Address of password string
+            mov ecx, max_Input_Size         ; Maximum size of password
+            call readstring                 ; Read password input
 
-exit
-main endp
+            ; Count character types in the password
+            push offset inputPasswordStr    ; Pass password as parameter
+            call count                      ; Updates smallCount, numCount, etc.
+
+            ; Evaluate password strength
+            push smallCount
+            push numCount
+            push captCount
+            push charCount
+            call evaluate                   ; Evaluates strength based on counts
+
+            ; Suggest a strong password
+            call crlf
+            mwrite "Here is a strong suggested password for you to use: "
+            call crlf
+
+            mov edx, offset generatedPass   ; Address for suggested password
+            mov ecx, max_Input_Size         ; Max size for the suggestion
+            call suggest                    ; Generates a strong password
+
+            ; Display the suggested password
+            push offset generatedPass       ; Push suggested password
+            push offset inputPasswordStr    ; Push original input
+            call writestring                ; Write both to console or file
+            
+            ; Log the password details to the file
+            call writer                     ; Writes to log file
+
+        .elseif userChoice == 2
+            ; Read password history from the file
+            call reader                     ; Reads and displays password history
+
+        .endif
+    .until userChoice == 3                  ; Exit loop when choice is 3
+
+    ; Exit program
+    exit
+main ENDP
+
 
 
 count proc
+    
+    ;Procedure to count the number of (uppercase, lowercase, digits, and special characters) in a string
+    ;Takes the offset of (Password) as an argument
+    ;Returns Nothing
+
     push ebp
     mov ebp, esp
 
@@ -73,6 +125,7 @@ count proc
     ; Reads the whole string and counts the type of characters in the string
     
     .while byte ptr [edx + esi] != 0
+        inc passLength
 
         mov al, byte ptr [edx + esi] ; Load the current character into AL
 
@@ -100,6 +153,10 @@ count proc
     
     .endw
 
+    mwrite "Password Length: "
+    mov eax, passLength
+    call writedec
+    call crlf
     pop ebp
     ret
 count endp
@@ -131,9 +188,15 @@ evaluate proc
 
     call crlf
 
-    .if captCount > 2 && smallCount > 2 && numCount > 3 && charCount > 3
+    .if passLength < 8
+		mwrite "Password Strength: Weak"
+        ret
+    .endif
+
+    
+    .if captCount >=2 && smallCount >=2 && numCount >= 2 && charCount >=1
         mwrite "Password Strength: Strong"
-    .elseif captCount >= 1 && smallCount >= 1 && numCount >= 2 && charCount >= 2
+    .elseif captCount >= 1 && smallCount >= 1 && numCount >= 1 && charCount >= 1
         mwrite "Password Strength: Medium"
     .else
         mwrite "Password Strength: Weak"
@@ -147,6 +210,11 @@ evaluate endp
 
 
 suggest proc
+
+    ;Procedure to suggest a strong password to the user
+    ;Takes nothing as an argument
+    ;Returns the suggested password
+
     ; Initialize random number generator
     call Randomize
 
@@ -205,7 +273,74 @@ fill_remaining:
 suggest endp
 
 
+writer proc
 
+    ;Procedure to write the password strength in a file and maintain Log file
+    ;Takes offsets of (Password,Strength and Suggested Password) as an argument and writes it to a file
+    ;Returns Nothing
+
+    push ebp                
+    mov ebp, esp            
+
+    mov edx, [ebp + 8]      ; edx = address of password (passed argument)
+
+    mov edx, offset logFileName 
+    call createoutputfile
+    mov filehandler, eax
+
+    ; Write the password to the file
+    mov edx, [ebp + 8]      
+    mov ecx, max_Input_Size 
+    mov eax, filehandler    
+    call writeToFile        
+
+    mov edx, offset strength      
+    mov ecx, max_Input_Size 
+    mov eax, filehandler    
+    call writeToFile
+
+    mov edx, offset generatedPass      
+    mov ecx, max_Input_Size 
+    mov eax, filehandler    
+    call writeToFile
+
+    call closeFile
+
+    pop ebp                 
+    ret            
+writer endp
+
+
+reader PROC
+
+    ; Purpose:
+    ; Reads passwords from a log file and displays them.
+    ; Arguments: None
+    ; Returns: None
+
+    ; Open the log file
+    mov edx, offset logFileName   ; File name to be opened
+    call openinputfile           ; Open file for reading
+    mov filehandler, eax         ; Store the file handle in filehandler
+
+    ; Read from the file
+    mov edx, offset loadedPasswords ; Buffer to store the file's content
+    mov ecx, max_Input_Size         ; Maximum number of bytes to read
+    mov eax, filehandler            ; File handle to read from
+    call readfromfile               ; Reads data into loadedPasswords
+
+    ; Write the loaded passwords to the console
+    mov edx, offset loadedPasswords ; Address of loaded data
+    call writestring                ; Display loaded passwords
+
+    ; Close the file
+    mov eax, filehandler            ; File handle to close
+    call closefile                  ; Closes the log file
+
+    ; Return to the caller
+    ret
+
+reader ENDP
 
 
 end main
